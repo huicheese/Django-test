@@ -274,17 +274,17 @@ If you want your code to work on Python 2 & 3, you can use
     class HandField(with_metaclass(models.SubfieldBase, models.Field)):
         ...
 
-This ensures that the :meth:`.to_python` method, documented below, will always
-be called when the attribute is initialized.
+This ensures that the :meth:`.to_python` method will always be called when the
+attribute is initialized.
 
-ModelForms and custom fields
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``ModelForm``\s and custom fields
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you use :class:`~django.db.models.SubfieldBase`, :meth:`.to_python`
-will be called every time an instance of the field is assigned a
-value. This means that whenever a value may be assigned to the field,
-you need to ensure that it will be of the correct datatype, or that
-you handle any exceptions.
+If you use :class:`~django.db.models.SubfieldBase`, :meth:`.to_python` will be
+called every time an instance of the field is assigned a value (in addition to
+its usual call when retrieving the value from the database). This means that
+whenever a value may be assigned to the field, you need to ensure that it will
+be of the correct datatype, or that you handle any exceptions.
 
 This is especially important if you use :doc:`ModelForms
 </topics/forms/modelforms>`. When saving a ModelForm, Django will use
@@ -501,6 +501,16 @@ For example::
             return ''.join([''.join(l) for l in (value.north,
                     value.east, value.south, value.west)])
 
+.. warning::
+
+    If your custom field uses the ``CHAR``, ``VARCHAR`` or ``TEXT``
+    types for MySQL, you must make sure that :meth:`.get_prep_value`
+    always returns a string type. MySQL performs flexible and unexpected
+    matching when a query is performed on these types and the provided
+    value is an integer, which can cause queries to include unexpected
+    objects in their results. This problem cannot occur if you always
+    return a string type from :meth:`.get_prep_value`.
+
 Converting query values to database values
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -681,7 +691,7 @@ and other SQL commands create the right column type for storing a string.
 
 If :meth:`.get_internal_type` returns a string that is not known to Django for
 the database backend you are using -- that is, it doesn't appear in
-``django.db.backends.<db_name>.creation.DATA_TYPES`` -- the string will still be
+``django.db.backends.<db_name>.creation.data_types`` -- the string will still be
 used by the serializer, but the default :meth:`.db_type` method will return
 ``None``. See the documentation of :meth:`.db_type` for reasons why this might be
 useful. Putting a descriptive string in as the type of the field for the

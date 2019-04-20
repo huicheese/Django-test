@@ -616,17 +616,24 @@ escaping HTML.
 
 .. function:: strip_tags(value)
 
-    Removes anything that looks like an html tag from the string, that is
-    anything contained within ``<>``.
+    Tries to remove anything that looks like an HTML tag from the string, that
+    is anything contained within ``<>``.
+
+    Absolutely NO guarantee is provided about the resulting string being
+    HTML safe. So NEVER mark safe the result of a ``strip_tag`` call without
+    escaping it first, for example with :func:`~django.utils.html.escape`.
 
     For example::
 
         strip_tags(value)
 
-    If ``value`` is ``"<b>Joel</b> <button>is</button> a <span>slug</span>"`` the
-    return value will be ``"Joel is a slug"``. Note that ``strip_tags`` result
-    may still contain unsafe HTML content, so you might use
-    :func:`~django.utils.html.escape` to make it a safe string.
+    If ``value`` is ``"<b>Joel</b> <button>is</button> a <span>slug</span>"``
+    the return value will be ``"Joel is a slug"``.
+
+    If you are looking for a more robust solution, take a look at the `bleach`_
+    Python library.
+
+    .. _bleach: https://pypi.python.org/pypi/bleach
 
     .. versionchanged:: 1.6
 
@@ -635,6 +642,13 @@ escaping HTML.
 .. function:: remove_tags(value, tags)
 
     Removes a space-separated list of [X]HTML tag names from the output.
+
+    Absolutely NO guarantee is provided about the resulting string being HTML
+    safe. In particular, it doesn't work recursively, so the output of
+    ``remove_tags("<sc<script>ript>alert('XSS')</sc</script>ript>", "script")``
+    won't remove the "nested" script tags. So if the ``value`` is untrusted,
+    NEVER mark safe the result of a ``remove_tags()`` call without escaping it
+    first, for example with :func:`~django.utils.html.escape`.
 
     For example::
 
@@ -675,7 +689,7 @@ escaping HTML.
 .. function:: urlencode(query, doseq=0)
 
     A version of Python's urllib.urlencode() function that can operate on
-    unicode strings. The parameters are first case to UTF-8 encoded strings
+    unicode strings. The parameters are first cast to UTF-8 encoded strings
     and then encoded as per normal.
 
 .. function:: cookie_date(epoch_seconds=None)
@@ -789,6 +803,9 @@ appropriate entities.
     object can be used everywhere a string or unicode object is appropriate.
 
     Can be called multiple times on a single string.
+
+    For building up fragments of HTML, you should normally be using
+    :func:`django.utils.html.format_html` instead.
 
     String marked safe will become unsafe again if modified. For example::
 
@@ -1020,7 +1037,7 @@ For a complete discussion on the usage of the following see the
     current point in time. Exactly what's returned depends on the value of
     :setting:`USE_TZ`:
 
-    * If :setting:`USE_TZ` is ``False``, this will be be a
+    * If :setting:`USE_TZ` is ``False``, this will be a
       :ref:`naive <naive_vs_aware_datetimes>` datetime (i.e. a datetime
       without an associated timezone) that represents the current time
       in the system's local timezone.

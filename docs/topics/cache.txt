@@ -34,7 +34,7 @@ offers different levels of cache granularity: You can cache the output of
 specific views, you can cache only the pieces that are difficult to produce,
 or you can cache your entire site.
 
-Django also works well with "upstream" caches, such as `Squid
+Django also works well with "downstream" caches, such as `Squid
 <http://www.squid-cache.org>`_ and browser-based caches. These are the types of
 caches that you don't directly control but to which you can provide hints (via
 HTTP headers) about which parts of your site should be cached, and how.
@@ -278,8 +278,9 @@ Local-memory caching
 This is the default cache if another is not specified in your settings file. If
 you want the speed advantages of in-memory caching but don't have the capability
 of running Memcached, consider the local-memory cache backend. This cache is
-multi-process and thread-safe. To use it, set :setting:`BACKEND <CACHES-BACKEND>`
-to ``"django.core.cache.backends.locmem.LocMemCache"``. For example::
+per-process (see below) and thread-safe. To use it, set :setting:`BACKEND
+<CACHES-BACKEND>` to ``"django.core.cache.backends.locmem.LocMemCache"``. For
+example::
 
     CACHES = {
         'default': {
@@ -410,6 +411,8 @@ of 60 seconds, and a maximum capacity of 1000 items::
 Invalid arguments are silently ignored, as are invalid values of known
 arguments.
 
+.. _the-per-site-cache:
+
 The per-site cache
 ==================
 
@@ -441,14 +444,14 @@ Then, add the following required settings to your Django settings file:
   the site, or some other string that is unique to this Django instance, to
   prevent key collisions. Use an empty string if you don't care.
 
-The cache middleware caches GET and HEAD responses with status 200, where the request
-and response headers allow. Responses to requests for the same URL with different
-query parameters are considered to be unique pages and are cached separately.
-The cache middleware expects that a HEAD request is answered with the same
-response headers as the corresponding GET request; in which case it can return
-a cached GET response for HEAD request.
+``FetchFromCacheMiddleware`` caches GET and HEAD responses with status 200,
+where the request and response headers allow. Responses to requests for the same
+URL with different query parameters are considered to be unique pages and are
+cached separately. This middleware expects that a HEAD request is answered with
+the same response headers as the corresponding GET request; in which case it can
+return a cached GET response for HEAD request.
 
-Additionally, the cache middleware automatically sets a few headers in each
+Additionally, ``UpdateCacheMiddleware`` automatically sets a few headers in each
 :class:`~django.http.HttpResponse`:
 
 * Sets the ``Last-Modified`` header to the current date/time when a fresh
@@ -536,9 +539,9 @@ setting for the middleware.  It can be used like this::
     def my_view(request):
         ...
 
-The two settings can also be combined. If you specify a ``cache`` *and*
-a ``key_prefix``, you will get all the settings of the requested cache
-alias, but with the key_prefix overridden.
+The ``key_prefix and ``cache`` arguments may be specified together. The
+``key_prefix`` argument and the :setting:`KEY_PREFIX <CACHES-KEY_PREFIX>`
+specified under :setting:`CACHES` will be concatenated.
 
 Specifying per-view cache in the URLconf
 ----------------------------------------
@@ -938,15 +941,15 @@ instance, to do this for the ``locmem`` backend, put this code in a module::
 ...and use the dotted Python path to this class in the
 :setting:`BACKEND <CACHES-BACKEND>` portion of your :setting:`CACHES` setting.
 
-Upstream caches
-===============
+Downstream caches
+=================
 
 So far, this document has focused on caching your *own* data. But another type
-of caching is relevant to Web development, too: caching performed by "upstream"
-caches. These are systems that cache pages for users even before the request
-reaches your Web site.
+of caching is relevant to Web development, too: caching performed by
+"downstream" caches. These are systems that cache pages for users even before
+the request reaches your Web site.
 
-Here are a few examples of upstream caches:
+Here are a few examples of downstream caches:
 
 * Your ISP may cache certain pages, so if you requested a page from
   http://example.com/, your ISP would send you the page without having to
@@ -964,7 +967,7 @@ Here are a few examples of upstream caches:
   subsequent requests to that page, without even contacting the Web page
   again to see whether it has changed.
 
-Upstream caching is a nice efficiency boost, but there's a danger to it:
+Downstream caching is a nice efficiency boost, but there's a danger to it:
 Many Web pages' contents differ based on authentication and a host of other
 variables, and cache systems that blindly save pages based purely on URLs could
 expose incorrect or sensitive data to subsequent visitors to those pages.
@@ -976,7 +979,7 @@ his user-specific inbox page cached for subsequent visitors to the site. That's
 not cool.
 
 Fortunately, HTTP provides a solution to this problem. A number of HTTP headers
-exist to instruct upstream caches to differ their cache contents depending on
+exist to instruct downstream caches to differ their cache contents depending on
 designated variables, and to tell caching mechanisms not to cache particular
 pages. We'll look at some of these headers in the sections that follow.
 
@@ -1022,7 +1025,7 @@ You can pass multiple headers to ``vary_on_headers()``::
     def my_view(request):
         # ...
 
-This tells upstream caches to vary on *both*, which means each combination of
+This tells downstream caches to vary on *both*, which means each combination of
 user-agent and cookie will get its own cache value. For example, a request with
 the user-agent ``Mozilla`` and the cookie value ``foo=bar`` will be considered
 different from a request with the user-agent ``Mozilla`` and the cookie value

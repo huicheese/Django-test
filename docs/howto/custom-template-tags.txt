@@ -87,9 +87,11 @@ Custom filters are just Python functions that take one or two arguments:
 For example, in the filter ``{{ var|foo:"bar" }}``, the filter ``foo`` would be
 passed the variable ``var`` and the argument ``"bar"``.
 
-Filter functions should always return something. They shouldn't raise
-exceptions. They should fail silently. In case of error, they should return
-either the original input or an empty string -- whichever makes more sense.
+Usually any exception raised from a template filter will be exposed as a server
+error. Thus, filter functions should avoid raising exceptions if there is a
+reasonable fallback value to return. In case of input that represents a clear
+bug in a template, raising an exception may still be better than silent failure
+which hides the bug.
 
 Here's an example filter definition:
 
@@ -287,7 +289,7 @@ Template filter code falls into one of two situations:
 
    Be careful, though. You need to do more than just mark the output as
    safe. You need to ensure it really *is* safe, and what you do depends on
-   whether auto-escaping is in effect. The idea is to write filters than
+   whether auto-escaping is in effect. The idea is to write filters that
    can operate in templates where auto-escaping is either on or off in
    order to make things easier for your template authors.
 
@@ -577,7 +579,7 @@ it's rendered:
 .. code-block:: html+django
 
     {% for o in some_list %}
-        <tr class="{% cycle 'row1' 'row2' %}>
+        <tr class="{% cycle 'row1' 'row2' %}">
             ...
         </tr>
     {% endfor %}

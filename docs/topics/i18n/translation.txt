@@ -124,7 +124,7 @@ specified with Python's standard named-string interpolation syntax. Example::
 This technique lets language-specific translations reorder the placeholder
 text. For example, an English translation may be ``"Today is November 26."``,
 while a Spanish translation may be ``"Hoy es 26 de Noviembre."`` -- with the
-the month and the day placeholders swapped.
+month and the day placeholders swapped.
 
 For this reason, you should use named-string interpolation (e.g., ``%(day)s``)
 instead of positional interpolation (e.g., ``%s`` or ``%d``) whenever you
@@ -750,7 +750,7 @@ or with the ``{#`` ... ``#}`` :ref:`one-line comment constructs <template-commen
         msgid "Go"
         msgstr ""
 
-        #. Translators:
+        #. Translators: This is a text of the base template
         # path/to/template/file.html:103
         msgid "Ambiguous translatable block of text"
         msgstr ""
@@ -846,7 +846,7 @@ There are also simple filters available for convenience:
 
 * ``{{ LANGUAGE_CODE|language_name }}`` ("German")
 * ``{{ LANGUAGE_CODE|language_name_local }}`` ("Deutsch")
-* ``{{ LANGUAGE_CODE|bidi }}`` (False)
+* ``{{ LANGUAGE_CODE|language_bidi }}`` (False)
 
 .. _Django templates: ../templates_python/
 
@@ -1014,7 +1014,7 @@ Client-side caching will save bandwidth and make your site load faster. If
 you're using ETags (:setting:`USE_ETAGS = True <USE_ETAGS>`), you're already
 covered. Otherwise, you can apply :ref:`conditional decorators
 <conditional-decorators>`. In the following example, the cache is invalidated
-whenever your restart your application server.
+whenever you restart your application server.
 
 .. code-block:: python
 
@@ -1221,10 +1221,9 @@ To create or update a message file, run this command::
 
     django-admin.py makemessages -l de
 
-...where ``de`` is the language code for the message file you want to create.
-The language code, in this case, is in :term:`locale format<locale name>`. For
-example, it's ``pt_BR`` for Brazilian Portuguese and ``de_AT`` for Austrian
-German.
+...where ``de`` is the :term:`locale name` for the message file you want to
+create. For example, ``pt_BR`` for Brazilian Portuguese, ``de_AT`` for Austrian
+German or ``id`` for Indonesian.
 
 The script should be run from one of two places:
 
@@ -1552,7 +1551,7 @@ is set :setting:`LANGUAGE_CODE` and make sure the corresponding :term:`message
 files <message file>` and their compiled versions (``.mo``) exist.
 
 If you want to let each individual user specify which language he or she
-prefers, then you also need to use use the ``LocaleMiddleware``.
+prefers, then you also need to use the ``LocaleMiddleware``.
 ``LocaleMiddleware`` enables language selection based on data from the request.
 It customizes content for each user.
 

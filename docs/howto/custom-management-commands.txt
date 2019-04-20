@@ -26,6 +26,10 @@ directory whose name doesn't begin with an underscore. For example::
         tests.py
         views.py
 
+On Python 2, be sure to include ``__init__.py`` files in both the
+``management`` and ``management/commands`` directories as done above or your
+command will not be detected.
+
 In this example, the ``closepoll`` command will be made available to any project
 that includes the ``polls`` application in :setting:`INSTALLED_APPS`.
 
@@ -173,6 +177,12 @@ non-uniform locales, so you might need to:
 * Review the code of your command and the code it calls for behavioral
   differences when locales are changed and evaluate its impact on
   predictable behavior of your command.
+
+Testing
+=======
+
+Information on how to test custom management commands can be found in the
+:ref:`testing docs <topics-testing-management-commands>`.
 
 Command objects
 ===============

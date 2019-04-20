@@ -307,7 +307,9 @@ subclass::
 
     * ``description``
         A string of optional extra text to be displayed at the top of each
-        fieldset, under the heading of the fieldset.
+        fieldset, under the heading of the fieldset. This string is not
+        rendered for :class:`~django.contrib.admin.TabularInline` due to its
+        layout.
 
         Note that this value is *not* HTML-escaped when it's displayed in
         the admin interface. This lets you include HTML if you so desire.
@@ -341,7 +343,7 @@ subclass::
     form rather than specifying an entirely new one by using the
     :meth:`ModelAdmin.get_form` method.
 
-    For an example see the section `Adding custom validation to the admin`_.
+    For an example see the section :ref:`admin-custom-validation`.
 
     .. admonition:: Note
 
@@ -597,7 +599,7 @@ subclass::
 
       For example::
 
-          class Person(object):
+          class Person(models.Model):
               first_name = models.CharField(max_length=50)
               last_name = models.CharField(max_length=50)
 
@@ -616,6 +618,17 @@ subclass::
       The field names in ``list_display`` will also appear as CSS classes in
       the HTML output, in the form of ``column-<field_name>`` on each ``<th>``
       element. This can be used to set column widths in a CSS file for example.
+
+    * Django will try to interpret every element of ``list_display`` in this
+      order:
+
+      * A field of the model.
+      * A callable.
+      * A string representing a ``ModelAdmin`` attribute.
+      * A string representing a model attribute.
+
+      For example if you have ``first_name`` as a model field and
+      as a ``ModelAdmin`` attribute, the model field will be used.
 
 
 .. attribute:: ModelAdmin.list_display_links
@@ -1054,7 +1067,7 @@ subclass::
 Custom template options
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The `Overriding Admin Templates`_ section describes how to override or extend
+The :ref:`admin-overriding-templates` section describes how to override or extend
 the default admin templates.  Use the following options to override the default
 templates used by the :class:`ModelAdmin` views:
 
@@ -1123,7 +1136,7 @@ templates used by the :class:`ModelAdmin` views:
     ``ModelForm`` instance and a boolean value based on whether it is adding or
     changing the parent object.
 
-    For example to attach ``request.user`` to each changed formset
+    For example, to attach ``request.user`` to each changed formset
     model instance::
 
         class ArticleAdmin(admin.ModelAdmin):
@@ -1133,6 +1146,8 @@ templates used by the :class:`ModelAdmin` views:
                     instance.user = request.user
                     instance.save()
                 formset.save_m2m()
+
+    See also :ref:`saving-objects-in-the-formset`.
 
 .. method:: ModelAdmin.get_ordering(request)
 
@@ -1176,9 +1191,10 @@ templates used by the :class:`ModelAdmin` views:
                 queryset, use_distinct = super(PersonAdmin, self).get_search_results(request, queryset, search_term)
                 try:
                     search_term_as_int = int(search_term)
-                    queryset |= self.model.objects.filter(age=search_term_as_int)
-                except:
+                except ValueError:
                     pass
+                else:
+                    queryset |= self.model.objects.filter(age=search_term_as_int)
                 return queryset, use_distinct
 
 .. method:: ModelAdmin.save_related(request, form, formsets, change)
@@ -1241,7 +1257,18 @@ templates used by the :class:`ModelAdmin` views:
     ``obj`` being edited (or ``None`` on an add form) and is expected to return
     a ``list`` or ``tuple`` of :class:`~django.contrib.admin.InlineModelAdmin`
     objects, as described below in the :class:`~django.contrib.admin.InlineModelAdmin`
-    section.
+    section. For example, the following would return inlines without the default
+    filtering based on add, change, and delete permissions::
+
+        class MyModelAdmin(admin.ModelAdmin):
+            inlines = (MyInline,)
+
+            def get_inline_instances(self, request, obj=None):
+                return [inline(self.model, self.admin_site) for inline in self.inlines]
+
+    If you override this method, make sure that the returned inlines are
+    instances of the classes defined in :attr:`inlines` or you might encounter
+    a "Bad Request" error when adding related objects.
 
 .. method:: ModelAdmin.get_urls()
 
@@ -1313,15 +1340,19 @@ templates used by the :class:`ModelAdmin` views:
     Returns a :class:`~django.forms.ModelForm` class for use in the admin add
     and change views, see :meth:`add_view` and :meth:`change_view`.
 
-    If you wanted to hide a field from non-superusers, for example, you could
-    override ``get_form`` as follows::
+    The base implementation uses :func:`~django.forms.models.modelform_factory`
+    to subclass :attr:`~form`, modified by attributes such as :attr:`~fields`
+    and :attr:`~exclude`. So, for example, if you wanted to offer additional
+    fields to superusers, you could swap in a different base form like so::
 
         class MyModelAdmin(admin.ModelAdmin):
             def get_form(self, request, obj=None, **kwargs):
-                self.exclude = []
-                if not request.user.is_superuser:
-                    self.exclude.append('field_to_hide')
+                if request.user.is_superuser:
+                    kwargs['form'] = MySuperuserForm
                 return super(MyModelAdmin, self).get_form(request, obj, **kwargs)
+
+    You may also simply return a custom :class:`~django.forms.ModelForm` class
+    directly.
 
 .. method:: ModelAdmin.get_formsets(request, obj=None)
 
@@ -1606,6 +1637,8 @@ return the uncompressed versions of the various JavaScript files, including
 
 .. _jQuery: http://jquery.com
 
+.. _admin-custom-validation:
+
 Adding custom validation to the admin
 -------------------------------------
 
@@ -1693,6 +1726,7 @@ adds some of its own (the shared features are actually defined in the
 - :attr:`~ModelAdmin.radio_fields`
 - :attr:`~ModelAdmin.readonly_fields`
 - :attr:`~InlineModelAdmin.raw_id_fields`
+- :meth:`~ModelAdmin.formfield_for_choice_field`
 - :meth:`~ModelAdmin.formfield_for_foreignkey`
 - :meth:`~ModelAdmin.formfield_for_manytomany`
 - :meth:`~ModelAdmin.has_add_permission`
@@ -1741,8 +1775,6 @@ The ``InlineModelAdmin`` class adds:
 
     :meth:`InlineModelAdmin.get_extra` also allows you to customize the number
     of extra forms.
-
-    .. _ref-contrib-admin-inline-max-num:
 
 .. attribute:: InlineModelAdmin.max_num
 
@@ -2024,6 +2056,8 @@ other inline. In your ``admin.py`` for this example app::
 See the :doc:`contenttypes documentation </ref/contrib/contenttypes>` for more
 specific information.
 
+.. _admin-overriding-templates:
+
 Overriding admin templates
 ==========================
 
@@ -2155,7 +2189,7 @@ creating your own ``AdminSite`` instance (see below), and changing the
 ------------------------
 
 Templates can override or extend base admin templates as described in
-`Overriding Admin Templates`_.
+:ref:`admin-overriding-templates`.
 
 .. attribute:: AdminSite.index_template
 

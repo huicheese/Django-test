@@ -131,14 +131,6 @@ Handles conditional GET operations. If the response has a ``ETag`` or
 
 Also sets the ``Date`` and ``Content-Length`` response-headers.
 
-Reverse proxy middleware
-------------------------
-
-.. class:: SetRemoteAddrFromForwardedFor
-
-This middleware was removed in Django 1.1. See :ref:`the release notes
-<removed-setremoteaddrfromforwardedfor-middleware>` for details.
-
 Locale middleware
 -----------------
 
@@ -184,6 +176,11 @@ Authentication middleware
 Adds the ``user`` attribute, representing the currently-logged-in user, to
 every incoming ``HttpRequest`` object. See :ref:`Authentication in Web requests
 <auth-web-requests>`.
+
+.. class:: RemoteUserMiddleware
+
+Middleware for utilizing Web server provided authentication. See
+:doc:`/howto/auth-remote-user` for usage details.
 
 CSRF protection middleware
 --------------------------
